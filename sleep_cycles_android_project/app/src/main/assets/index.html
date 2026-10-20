@@ -1,0 +1,1094 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0f172a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>نومك — حاسبة دورات النوم الذكية</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Cairo', 'Inter', 'sans-serif'],
+            mono: ['Inter', 'monospace']
+          },
+          colors: {
+            night: {
+              950: '#070b19',
+              900: '#0f172a',
+              800: '#1e293b',
+              700: '#334155'
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    body {
+      font-family: 'Cairo', 'Inter', sans-serif;
+      background: radial-gradient(circle at 50% 0%, #1e1b4b 0%, #0f172a 45%, #070b19 100%);
+      color: #f8fafc;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    .glass-card {
+      background: rgba(30, 41, 59, 0.65);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(148, 163, 184, 0.14);
+    }
+    .glass-pill {
+      background: rgba(15, 23, 42, 0.75);
+      border: 1px solid rgba(148, 163, 184, 0.16);
+    }
+    .glow-indigo {
+      box-shadow: 0 0 30px -5px rgba(99, 102, 241, 0.35);
+    }
+    .star-dot {
+      position: absolute;
+      border-radius: 9999px;
+      background: white;
+      opacity: 0.35;
+      animation: twinkle 4s infinite ease-in-out;
+    }
+    @keyframes twinkle {
+      0%, 100% { opacity: 0.2; transform: scale(1); }
+      50% { opacity: 0.75; transform: scale(1.25); }
+    }
+    input[type="range"] {
+      accent-color: #818cf8;
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.5);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(99, 102, 241, 0.4);
+      border-radius: 9999px;
+    }
+  </style>
+</head>
+<body class="selection:bg-indigo-500 selection:text-white pb-24">
+
+  <!-- Decorative Night Sky Background -->
+  <div class="fixed inset-0 pointer-events-none overflow-hidden z-0" aria-hidden="true">
+    <div class="star-dot w-1 h-1 top-10 right-12" style="animation-delay: 0.2s;"></div>
+    <div class="star-dot w-1.5 h-1.5 top-24 left-16" style="animation-delay: 1.1s;"></div>
+    <div class="star-dot w-1 h-1 top-48 right-1/3" style="animation-delay: 2.3s;"></div>
+    <div class="star-dot w-2 h-2 top-16 left-1/3" style="animation-delay: 0.7s;"></div>
+    <div class="star-dot w-1 h-1 bottom-32 right-20" style="animation-delay: 1.8s;"></div>
+    <div class="star-dot w-1.5 h-1.5 bottom-48 left-24" style="animation-delay: 2.9s;"></div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toastContainer" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 opacity-0 pointer-events-none transform -translate-y-3">
+    <div class="bg-indigo-600/95 text-white px-5 py-2.5 rounded-2xl shadow-xl border border-indigo-400/30 flex items-center gap-2.5 text-sm font-semibold">
+      <svg class="w-4 h-4 shrink-0 text-indigo-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+      </svg>
+      <span id="toastMessage">تم الحفظ بنجاح</span>
+    </div>
+  </div>
+
+  <!-- APK Export / Install Guide Modal -->
+  <div id="apkModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="glass-card rounded-3xl max-w-lg w-full p-6 border border-indigo-500/30 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-700/60 pb-3">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center text-indigo-300">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+            </svg>
+          </div>
+          <h3 class="text-lg font-bold text-white">تثبيت التطبيق على هاتفك الأندرويد</h3>
+        </div>
+        <button id="closeApkModalBtn" onclick="toggleApkModal(false)" class="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800/60 transition">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+      <div class="space-y-3 text-sm text-slate-300 leading-relaxed">
+        <div class="p-3.5 rounded-2xl bg-indigo-950/50 border border-indigo-500/25">
+          <p class="font-bold text-indigo-300 mb-1">1. التثبيت الفوري كتطبيق ويب تقدمي (PWA):</p>
+          <p>افتح هذا التطبيق في متصفح Chrome على هاتفك الأندرويد، ثم اضغط على القائمة <strong>(⋮)</strong> واختر <strong>«إضافة إلى الشاشة الرئيسية» (Add to Home Screen)</strong> ليعمل كتطبيق مستقل بكامل الشاشة ودون إنترنت.</p>
+        </div>
+        <div class="p-3.5 rounded-2xl bg-slate-900/70 border border-slate-700/60">
+          <p class="font-bold text-emerald-300 mb-1">2. بناء ملف APK أصلي عبر مشروع Android Studio المرفق:</p>
+          <p>قم بتحميل ملف <strong>sleep_cycles_android_project.zip</strong> المرفق، وفك ضغطه في برنامج <strong>Android Studio</strong> ثم اختر <code>Build &gt; Build Bundle(s) / APK(s) &gt; Build APK(s)</code>، أو ارفعه إلى GitHub ليقوم ملف GitHub Actions المدمج ببناء ملف الـ APK تلقائياً.</p>
+        </div>
+      </div>
+      <div class="pt-2 flex justify-end">
+        <button id="confirmApkModalBtn" onclick="toggleApkModal(false)" class="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold px-5 py-2.5 rounded-xl transition">
+          فهمت، شكراً
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Container (Mobile App Shell + Responsive Tablet/Desktop Layout) -->
+  <div class="relative z-10 max-w-4xl mx-auto px-4 pt-5 sm:pt-8">
+
+    <!-- Top App Bar -->
+    <header class="glass-card rounded-3xl p-4 sm:p-5 mb-6 flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center gap-3.5">
+        <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/30">
+          <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-xl sm:text-2xl font-extrabold text-white tracking-tight">نومك</h1>
+            <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-400/30">إصدار أندرويد 1.0</span>
+          </div>
+          <p class="text-xs sm:text-sm text-slate-400">حاسبة دورات النوم الذكية والاستيقاظ النشط</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2.5">
+        <!-- Live Clock Pill -->
+        <div class="glass-pill px-3.5 py-2 rounded-2xl flex items-center gap-2 text-xs sm:text-sm">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span class="text-slate-400">الآن:</span>
+          <span id="liveClockDisplay" class="font-mono font-bold text-white" dir="ltr">--:--</span>
+        </div>
+
+        <!-- APK Guide Button -->
+        <button id="openApkModalBtn" onclick="toggleApkModal(true)" class="glass-pill hover:bg-indigo-600/25 hover:border-indigo-400/40 text-indigo-300 px-3.5 py-2 rounded-2xl text-xs sm:text-sm font-semibold flex items-center gap-1.5 transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+          </svg>
+          <span>دليل APK</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <nav class="glass-card rounded-2xl p-1.5 mb-6 grid grid-cols-2 sm:grid-cols-4 gap-1.5" aria-label="أقسام التطبيق">
+      <button id="tabBtnWake" onclick="switchTab('wake')" class="tab-btn py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold transition flex items-center justify-center gap-2 bg-indigo-600 text-white shadow-md">
+        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
+        </svg>
+        <span>متى أستيقظ؟</span>
+      </button>
+      <button id="tabBtnSleep" onclick="switchTab('sleep')" class="tab-btn py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold transition flex items-center justify-center gap-2 text-slate-300 hover:text-white hover:bg-slate-800/50">
+        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+        </svg>
+        <span>متى أنام؟</span>
+      </button>
+      <button id="tabBtnNap" onclick="switchTab('nap')" class="tab-btn py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold transition flex items-center justify-center gap-2 text-slate-300 hover:text-white hover:bg-slate-800/50">
+        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+        </svg>
+        <span>القيلولة الذكية</span>
+      </button>
+      <button id="tabBtnLog" onclick="switchTab('log')" class="tab-btn py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold transition flex items-center justify-center gap-2 text-slate-300 hover:text-white hover:bg-slate-800/50">
+        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+        </svg>
+        <span>مراحل وسجل النوم</span>
+      </button>
+    </nav>
+
+    <!-- Global Quick Settings Bar (Fall Asleep Time & Cycle Duration) -->
+    <section class="glass-card rounded-2xl p-4 mb-6">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+        <div>
+          <div class="flex justify-between text-xs font-semibold mb-1.5">
+            <span class="text-slate-300">مدة الغفو (الاستغراق في النوم):</span>
+            <span id="latencyValueLabel" class="text-indigo-300 font-bold">14 دقيقة</span>
+          </div>
+          <input id="latencySlider" type="range" min="5" max="45" step="1" value="14" oninput="updateConfig()" class="w-full h-2 bg-slate-800 rounded-lg cursor-pointer" />
+          <div class="flex justify-between text-[11px] text-slate-500 mt-1">
+            <span>5 د (سريع)</span>
+            <span>المتوسط: 14 د</span>
+            <span>45 د (بطيء)</span>
+          </div>
+        </div>
+
+        <div>
+          <div class="flex justify-between text-xs font-semibold mb-1.5">
+            <span class="text-slate-300">طول دورة النوم الواحدة:</span>
+            <span id="cycleLengthLabel" class="text-indigo-300 font-bold">90 دقيقة</span>
+          </div>
+          <input id="cycleLengthSlider" type="range" min="80" max="110" step="5" value="90" oninput="updateConfig()" class="w-full h-2 bg-slate-800 rounded-lg cursor-pointer" />
+          <div class="flex justify-between text-[11px] text-slate-500 mt-1">
+            <span>80 د</span>
+            <span>القياسي: 90 د</span>
+            <span>110 د</span>
+          </div>
+        </div>
+
+        <div>
+          <label for="ageGroupSelect" class="block text-xs font-semibold text-slate-300 mb-1.5">الفئة العمرية (لتوصية الساعات):</label>
+          <select id="ageGroupSelect" onchange="updateConfig()" class="w-full bg-slate-900/90 border border-slate-700/80 rounded-xl px-3 py-2 text-xs sm:text-sm text-white focus:outline-none focus:border-indigo-500">
+            <option value="adult" selected>بالغون (18 - 64 سنة) — يوصى بـ 5 إلى 6 دورات</option>
+            <option value="teen">مراهقون (14 - 17 سنة) — يوصى بـ 5 إلى 6 دورات</option>
+            <option value="school">أطفال مدارس (6 - 13 سنة) — يوصى بـ 6 إلى 7 دورات</option>
+            <option value="senior">كبار السن (65+ سنة) — يوصى بـ 5 دورات</option>
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 1: WAKE UP CALCULATOR (متى أستيقظ؟) -->
+    <main id="tabPanelWake" class="space-y-6">
+      <div class="glass-card rounded-3xl p-5 sm:p-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-slate-700/60">
+          <div>
+            <h2 class="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
+              <span>احسب أفضل أوقات الاستيقاظ</span>
+            </h2>
+            <p class="text-xs sm:text-sm text-slate-400 mt-1">الاستيقاظ في نهاية دورة النوم (خلال النوم الخفيف) يمنحك نشاطاً ويجنبك خمول الصباح.</p>
+          </div>
+          <button id="sleepNowQuickBtn" onclick="setSleepNow()" class="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold px-5 py-3 rounded-2xl shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2 transition shrink-0">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <span>سأنام الآن</span>
+          </button>
+        </div>
+
+        <!-- Custom Bedtime Picker -->
+        <div class="mt-5 flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-900/60 p-4 rounded-2xl border border-slate-800">
+          <div class="flex items-center gap-2.5">
+            <div class="w-10 h-10 rounded-xl bg-indigo-500/15 border border-indigo-500/30 flex items-center justify-center text-indigo-300">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+              </svg>
+            </div>
+            <div>
+              <p class="text-sm font-bold text-white">أو حدد وقت الذهاب إلى الفراش:</p>
+              <p id="bedtimeSummaryNote" class="text-xs text-slate-400">يُضاف تلقائياً 14 دقيقة للاستغراق في النوم</p>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2" dir="ltr">
+            <select id="bedHourSelect" onchange="calculateWakeTimes()" aria-label="ساعة النوم" class="bg-slate-800 border border-slate-700 text-white font-mono text-lg font-bold rounded-xl px-3 py-2 focus:outline-none focus:border-indigo-500">
+              <option value="1">01</option>
+              <option value="2">02</option>
+              <option value="3">03</option>
+              <option value="4">04</option>
+              <option value="5">05</option>
+              <option value="6">06</option>
+              <option value="7">07</option>
+              <option value="8">08</option>
+              <option value="9">09</option>
+              <option value="10" selected>10</option>
+              <option value="11">11</option>
+              <option value="12">12</option>
+            </select>
+            <span class="text-xl font-bold text-slate-400">:</span>
+            <select id="bedMinuteSelect" onchange="calculateWakeTimes()" aria-label="دقيقة النوم" class="bg-slate-800 border border-slate-700 text-white font-mono text-lg font-bold rounded-xl px-3 py-2 focus:outline-none focus:border-indigo-500">
+              <option value="0">00</option>
+              <option value="5">05</option>
+              <option value="10">10</option>
+              <option value="15">15</option>
+              <option value="20">20</option>
+              <option value="25">25</option>
+              <option value="30" selected>30</option>
+              <option value="35">35</option>
+              <option value="40">40</option>
+              <option value="45">45</option>
+              <option value="50">50</option>
+              <option value="55">55</option>
+            </select>
+            <select id="bedPeriodSelect" onchange="calculateWakeTimes()" aria-label="صباحاً أو مساءً" class="bg-indigo-950 border border-indigo-500/40 text-indigo-200 font-bold text-sm rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-400">
+              <option value="PM" selected>مساءً (PM)</option>
+              <option value="AM">صباحاً (AM)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Wake Up Results Grid -->
+        <div class="mt-6">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-sm font-bold text-slate-300">أوقات الاستيقاظ المقترحة (اضغط على أي وقت لحفظه في جدولك):</h3>
+            <span id="ageRecommendationBadge" class="text-xs text-emerald-300 bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-1 rounded-full font-semibold">المثالي لك: 5 - 6 دورات</span>
+          </div>
+          <div id="wakeResultsContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5"></div>
+        </div>
+      </div>
+    </main>
+
+    <!-- TAB 2: BEDTIME CALCULATOR (متى أنام؟) -->
+    <section id="tabPanelSleep" class="space-y-6 hidden">
+      <div class="glass-card rounded-3xl p-5 sm:p-6">
+        <div class="pb-5 border-b border-slate-700/60">
+          <h2 class="text-lg sm:text-xl font-bold text-white">متى يجب أن تذهب إلى الفراش؟</h2>
+          <p class="text-xs sm:text-sm text-slate-400 mt-1">حدد موعد استيقاظك المطلوب صباحاً، وسنحسب لك أفضل مواعيد النوم لإتمام دورات نوم كاملة.</p>
+        </div>
+
+        <!-- Target Wake Time Picker -->
+        <div class="mt-5 flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-900/60 p-4 rounded-2xl border border-slate-800">
+          <div class="flex items-center gap-2.5">
+            <div class="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-300">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
+              </svg>
+            </div>
+            <div>
+              <p class="text-sm font-bold text-white">أريد الاستيقاظ في تمام الساعة:</p>
+              <p class="text-xs text-slate-400">اختر موعد المنبه الصباحي أو المسائي</p>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2" dir="ltr">
+            <select id="wakeHourSelect" onchange="calculateBedTimes()" aria-label="ساعة الاستيقاظ" class="bg-slate-800 border border-slate-700 text-white font-mono text-lg font-bold rounded-xl px-3 py-2 focus:outline-none focus:border-indigo-500">
+              <option value="1">01</option>
+              <option value="2">02</option>
+              <option value="3">03</option>
+              <option value="4">04</option>
+              <option value="5">05</option>
+              <option value="6" selected>06</option>
+              <option value="7">07</option>
+              <option value="8">08</option>
+              <option value="9">09</option>
+              <option value="10">10</option>
+              <option value="11">11</option>
+              <option value="12">12</option>
+            </select>
+            <span class="text-xl font-bold text-slate-400">:</span>
+            <select id="wakeMinuteSelect" onchange="calculateBedTimes()" aria-label="دقيقة الاستيقاظ" class="bg-slate-800 border border-slate-700 text-white font-mono text-lg font-bold rounded-xl px-3 py-2 focus:outline-none focus:border-indigo-500">
+              <option value="0">00</option>
+              <option value="5">05</option>
+              <option value="10">10</option>
+              <option value="15">15</option>
+              <option value="20">20</option>
+              <option value="25">25</option>
+              <option value="30" selected>30</option>
+              <option value="35">35</option>
+              <option value="40">40</option>
+              <option value="45">45</option>
+              <option value="50">50</option>
+              <option value="55">55</option>
+            </select>
+            <select id="wakePeriodSelect" onchange="calculateBedTimes()" aria-label="صباحاً أو مساءً للاستيقاظ" class="bg-amber-950/80 border border-amber-500/40 text-amber-200 font-bold text-sm rounded-xl px-3 py-2.5 focus:outline-none focus:border-amber-400">
+              <option value="AM" selected>صباحاً (AM)</option>
+              <option value="PM">مساءً (PM)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Quick Preset Wake Times -->
+        <div class="mt-4 flex flex-wrap items-center gap-2">
+          <span class="text-xs text-slate-400">مواعيد شائعة:</span>
+          <button id="presetWake500" onclick="setQuickWake(5, 0, 'AM')" class="text-xs px-3 py-1.5 rounded-xl bg-slate-800/80 hover:bg-indigo-600/30 text-slate-300 hover:text-white border border-slate-700 transition">05:00 ص (الفجر)</button>
+          <button id="presetWake600" onclick="setQuickWake(6, 0, 'AM')" class="text-xs px-3 py-1.5 rounded-xl bg-slate-800/80 hover:bg-indigo-600/30 text-slate-300 hover:text-white border border-slate-700 transition">06:00 ص</button>
+          <button id="presetWake630" onclick="setQuickWake(6, 30, 'AM')" class="text-xs px-3 py-1.5 rounded-xl bg-slate-800/80 hover:bg-indigo-600/30 text-slate-300 hover:text-white border border-slate-700 transition">06:30 ص</button>
+          <button id="presetWake700" onclick="setQuickWake(7, 0, 'AM')" class="text-xs px-3 py-1.5 rounded-xl bg-slate-800/80 hover:bg-indigo-600/30 text-slate-300 hover:text-white border border-slate-700 transition">07:00 ص</button>
+          <button id="presetWake800" onclick="setQuickWake(8, 0, 'AM')" class="text-xs px-3 py-1.5 rounded-xl bg-slate-800/80 hover:bg-indigo-600/30 text-slate-300 hover:text-white border border-slate-700 transition">08:00 ص</button>
+        </div>
+
+        <!-- Bedtime Results Grid -->
+        <div class="mt-6">
+          <h3 class="text-sm font-bold text-slate-300 mb-3">مواعيد الذهاب إلى الفراش المقترحة (اضغط على أي وقت لحفظه):</h3>
+          <div id="bedResultsContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: SMART NAP & TIMER (القيلولة الذكية) -->
+    <section id="tabPanelNap" class="space-y-6 hidden">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <!-- Nap Modes Selection -->
+        <div class="lg:col-span-7 glass-card rounded-3xl p-5 sm:p-6 space-y-4">
+          <div>
+            <h2 class="text-lg sm:text-xl font-bold text-white">حاسبة القيلولة العلمية</h2>
+            <p class="text-xs sm:text-sm text-slate-400 mt-1">اختر نوع القيلولة المناسب لوقتك لتجنب الدخول في النوم العميق الثقيل (خمول القيلولة).</p>
+          </div>
+
+          <div class="space-y-3">
+            <!-- Power Nap 20m -->
+            <div id="napCard20" onclick="selectNapPreset(20, 'قيلولة الطاقة السريعة')" class="cursor-pointer p-4 rounded-2xl border border-indigo-500/50 bg-indigo-950/40 hover:bg-indigo-900/40 transition flex items-center justify-between gap-4">
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="text-base font-bold text-white">قيلولة الطاقة السريعة (Power Nap)</span>
+                  <span class="text-xs px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-semibold">20 دقيقة</span>
+                </div>
+                <p class="text-xs text-slate-300 mt-1">تبقيك في المرحلة الثانية (N2) من النوم الخفيف؛ تعزز الانتباه والتركيز فوراً دون أي ترنح.</p>
+              </div>
+              <div class="text-left shrink-0">
+                <span class="text-xs text-slate-400 block">الاستيقاظ لو نمت الآن</span>
+                <span id="napWake20" class="font-mono text-base font-extrabold text-indigo-300" dir="ltr">--:--</span>
+              </div>
+            </div>
+
+            <!-- NASA Nap 26m -->
+            <div id="napCard26" onclick="selectNapPreset(26, 'قيلولة ناسا للتركيز')" class="cursor-pointer p-4 rounded-2xl border border-slate-700/70 bg-slate-900/50 hover:bg-slate-800/60 transition flex items-center justify-between gap-4">
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="text-base font-bold text-white">قيلولة وكالة ناسا (NASA Nap)</span>
+                  <span class="text-xs px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-300 font-semibold">26 دقيقة</span>
+                </div>
+                <p class="text-xs text-slate-300 mt-1">أثبتت دراسات ناسا أنها ترفع الأداء الإدراكي بنسبة 34% واليقظة بنسبة 54% للطيارين.</p>
+              </div>
+              <div class="text-left shrink-0">
+                <span class="text-xs text-slate-400 block">الاستيقاظ لو نمت الآن</span>
+                <span id="napWake26" class="font-mono text-base font-extrabold text-sky-300" dir="ltr">--:--</span>
+              </div>
+            </div>
+
+            <!-- Full Cycle Nap 90m -->
+            <div id="napCard90" onclick="selectNapPreset(90, 'دورة قيلولة كاملة')" class="cursor-pointer p-4 rounded-2xl border border-slate-700/70 bg-slate-900/50 hover:bg-slate-800/60 transition flex items-center justify-between gap-4">
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="text-base font-bold text-white">دورة قيلولة كاملة (Full Cycle)</span>
+                  <span class="text-xs px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 font-semibold">90 دقيقة</span>
+                </div>
+                <p class="text-xs text-slate-300 mt-1">تمر عبر النوم الخفيف والعميق ونوم الأحلام (REM) لتعويض نقص النوم الليلي وتنشيط الذاكرة.</p>
+              </div>
+              <div class="text-left shrink-0">
+                <span class="text-xs text-slate-400 block">الاستيقاظ لو نمت الآن</span>
+                <span id="napWake90" class="font-mono text-base font-extrabold text-purple-300" dir="ltr">--:--</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Built-in Nap Timer with Audio Chime -->
+        <div class="lg:col-span-5 glass-card rounded-3xl p-5 sm:p-6 flex flex-col justify-between items-center text-center">
+          <div class="w-full">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-bold text-indigo-300 bg-indigo-500/15 px-3 py-1 rounded-full border border-indigo-400/25" id="activeNapTitle">قيلولة الطاقة السريعة</span>
+              <span class="text-xs text-slate-400" id="napLatencyNote">+ يضاف وقت الغفو</span>
+            </div>
+            <p class="text-xs text-slate-400">مؤقت القيلولة المدمج مع منبه صوتي هادئ</p>
+          </div>
+
+          <!-- Circular Timer Display -->
+          <div class="my-6 relative w-48 h-48 flex items-center justify-center rounded-full border-4 border-indigo-500/30 bg-slate-900/80 shadow-inner">
+            <div>
+              <div id="napTimerDisplay" class="font-mono text-4xl font-extrabold text-white tracking-wider" dir="ltr">34:00</div>
+              <div id="napTimerSubtext" class="text-xs text-slate-400 mt-1">شاملاً 14 د للغفو</div>
+            </div>
+          </div>
+
+          <div class="w-full space-y-2.5">
+            <div class="grid grid-cols-2 gap-2.5">
+              <button id="napStartPauseBtn" onclick="toggleNapTimer()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-4 rounded-2xl transition shadow-lg shadow-indigo-500/25">
+                بدء المؤقت
+              </button>
+              <button id="napResetBtn" onclick="resetNapTimer()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold py-3 px-4 rounded-2xl border border-slate-700 transition">
+                إعادة ضبط
+              </button>
+            </div>
+            <button id="testAlarmSoundBtn" onclick="playGentleChime()" class="w-full text-xs text-indigo-300 hover:text-indigo-200 py-2 rounded-xl hover:bg-slate-800/50 transition flex items-center justify-center gap-1.5">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path>
+              </svg>
+              <span>تجربة نغمة المنبه الهادئة</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 4: SLEEP STAGES & SAVED LOG (مراحل وسجل النوم) -->
+    <section id="tabPanelLog" class="space-y-6 hidden">
+      <!-- Sleep Cycle Architecture Breakdown -->
+      <div class="glass-card rounded-3xl p-5 sm:p-6">
+        <h2 class="text-lg sm:text-xl font-bold text-white mb-1">كيف تعمل دورة النوم (90 دقيقة)؟</h2>
+        <p class="text-xs sm:text-sm text-slate-400 mb-5">يتكون نوم الإنسان من دورات متتالية، تمر كل دورة منها بـ 4 مراحل حيوية لترميم الجسم والذاكرة:</p>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+          <div class="p-4 rounded-2xl bg-slate-900/70 border border-slate-800">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-sky-500/20 text-sky-300">المرحلة N1</span>
+              <span class="text-xs text-slate-400">1 - 7 دقائق</span>
+            </div>
+            <h3 class="font-bold text-white text-sm mb-1">النعاس والنوم الخفيف الأولي</h3>
+            <p class="text-xs text-slate-400 leading-relaxed">مرحلة الانتقال من اليقظة إلى النوم؛ تتباطأ فيها ضربات القلب وحركة العين وتسترخي العضلات.</p>
+          </div>
+
+          <div class="p-4 rounded-2xl bg-slate-900/70 border border-slate-800">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300">المرحلة N2</span>
+              <span class="text-xs text-slate-400">10 - 25 دقيقة</span>
+            </div>
+            <h3 class="font-bold text-white text-sm mb-1">النوم الخفيف المستقر</h3>
+            <p class="text-xs text-slate-400 leading-relaxed">تنخفض درجة حرارة الجسم وتتوقف حركة العين؛ تمثل هذه المرحلة نحو 50% من إجمالي نوم الليل.</p>
+          </div>
+
+          <div class="p-4 rounded-2xl bg-slate-900/70 border border-slate-800">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-purple-500/20 text-purple-300">المرحلة N3</span>
+              <span class="text-xs text-slate-400">20 - 40 دقيقة</span>
+            </div>
+            <h3 class="font-bold text-white text-sm mb-1">النوم العميق (الموجات البطيئة)</h3>
+            <p class="text-xs text-slate-400 leading-relaxed">مرحلة الاستشفاء الجسدي وبناء الأنسجة وتقوية المناعة. الاستيقاظ خلالها يسبب الخمول والصداع.</p>
+          </div>
+
+          <div class="p-4 rounded-2xl bg-slate-900/70 border border-slate-800">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300">مرحلة REM</span>
+              <span class="text-xs text-slate-400">10 - 60 دقيقة</span>
+            </div>
+            <h3 class="font-bold text-white text-sm mb-1">حركة العين السريعة (الأحلام)</h3>
+            <p class="text-xs text-slate-400 leading-relaxed">ينشط فيها الدماغ لتثبيت الذاكرة والتعلم وتنظيم المشاعر، وتنتهي الدورة بعدها بنوم خفيف يسهل الاستيقاظ فيه.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Saved Sleep Plans Log -->
+      <div class="glass-card rounded-3xl p-5 sm:p-6">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h2 class="text-lg font-bold text-white">سجل مواعيد النوم المحفوظة</h2>
+            <p class="text-xs text-slate-400">المواعيد التي اخترتها من حاسبة الاستيقاظ أو النوم</p>
+          </div>
+          <button id="clearSavedLogsBtn" onclick="clearSavedPlans()" class="text-xs text-rose-300 hover:text-white bg-rose-500/15 hover:bg-rose-600/40 border border-rose-500/30 px-3 py-1.5 rounded-xl transition">
+            مسح السجل
+          </button>
+        </div>
+        <div id="savedPlansList" class="space-y-2.5"></div>
+      </div>
+    </section>
+
+  </div>
+
+  <script>
+    // Application State
+    const state = {
+      activeTab: 'wake',
+      latencyMinutes: 14,
+      cycleMinutes: 90,
+      ageGroup: 'adult',
+      napMinutes: 20,
+      napTitle: 'قيلولة الطاقة السريعة',
+      napRemainingSeconds: (20 + 14) * 60,
+      napTimerId: null,
+      napRunning: false,
+      savedPlans: []
+    };
+
+    const ageRecommendations = {
+      adult: { minCycles: 5, maxCycles: 6, label: 'المثالي للبالغين: 5 - 6 دورات (7.5 - 9 ساعات)' },
+      teen: { minCycles: 5, maxCycles: 6, label: 'المثالي للمراهقين: 5 - 6 دورات (8 - 10 ساعات)' },
+      school: { minCycles: 6, maxCycles: 7, label: 'المثالي للأطفال: 6 - 7 دورات (9 - 11 ساعة)' },
+      senior: { minCycles: 5, maxCycles: 5, label: 'المثالي لكبار السن: 5 دورات (7 - 8 ساعات)' }
+    };
+
+    // Safe LocalStorage Helpers
+    function loadSavedPlans() {
+      try {
+        const raw = localStorage.getItem('nomak_saved_plans_v1');
+        if (raw) {
+          state.savedPlans = JSON.parse(raw);
+        }
+      } catch (err) {
+        state.savedPlans = [];
+      }
+      if (!Array.isArray(state.savedPlans) || state.savedPlans.length === 0) {
+        state.savedPlans = [
+          {
+            id: 'sample-1',
+            mode: 'خطة نوم مثالية',
+            bedtime: '10:30 م',
+            waketime: '06:14 ص',
+            cycles: 5,
+            hoursText: '7 ساعات و 30 دقيقة'
+          }
+        ];
+      }
+    }
+
+    function persistSavedPlans() {
+      try {
+        localStorage.setItem('nomak_saved_plans_v1', JSON.stringify(state.savedPlans));
+      } catch (err) {
+        // Ignore storage errors in sandboxed iframes
+      }
+    }
+
+    // Toast Helper
+    let toastTimeoutId = null;
+    function showToast(message) {
+      const container = document.getElementById('toastContainer');
+      const textEl = document.getElementById('toastMessage');
+      if (!container || !textEl) return;
+      textEl.textContent = message;
+      container.classList.remove('opacity-0', '-translate-y-3', 'pointer-events-none');
+      container.classList.add('opacity-100', 'translate-y-0');
+      if (toastTimeoutId) clearTimeout(toastTimeoutId);
+      toastTimeoutId = setTimeout(() => {
+        container.classList.remove('opacity-100', 'translate-y-0');
+        container.classList.add('opacity-0', '-translate-y-3', 'pointer-events-none');
+      }, 2600);
+    }
+
+    // Modal Helper
+    function toggleApkModal(show) {
+      const modal = document.getElementById('apkModal');
+      if (!modal) return;
+      if (show) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      } else {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }
+    }
+
+    // Time Formatting Helpers
+    function toMinutesFrom12h(hour12, minute, period) {
+      let h = parseInt(hour12, 10) % 12;
+      if (period === 'PM') h += 12;
+      return h * 60 + parseInt(minute, 10);
+    }
+
+    function formatMinutesToArabic12h(totalMinutes) {
+      const normalized = ((totalMinutes % 1440) + 1440) % 1440;
+      const h24 = Math.floor(normalized / 60);
+      const m = normalized % 60;
+      const periodAr = h24 >= 12 ? 'م' : 'ص';
+      const periodEn = h24 >= 12 ? 'PM' : 'AM';
+      let h12 = h24 % 12;
+      if (h12 === 0) h12 = 12;
+      const hStr = String(h12).padStart(2, '0');
+      const mStr = String(m).padStart(2, '0');
+      return {
+        formattedAr: `${hStr}:${mStr} ${periodAr}`,
+        formattedEn: `${hStr}:${mStr} ${periodEn}`,
+        timeOnly: `${hStr}:${mStr}`,
+        periodAr: periodAr
+      };
+    }
+
+    function formatDurationArabic(totalMins) {
+      const hrs = Math.floor(totalMins / 60);
+      const mins = totalMins % 60;
+      if (hrs > 0 && mins > 0) {
+        return `${hrs} س و ${mins} د`;
+      }
+      if (hrs > 0) {
+        return `${hrs} ساعات`;
+      }
+      return `${mins} دقيقة`;
+    }
+
+    // Live Clock
+    function updateLiveClock() {
+      const now = new Date();
+      const mins = now.getHours() * 60 + now.getMinutes();
+      const formatted = formatMinutesToArabic12h(mins);
+      const clockEl = document.getElementById('liveClockDisplay');
+      if (clockEl) {
+        clockEl.textContent = formatted.formattedAr;
+      }
+      updateNapPreviewTimes(mins);
+    }
+
+    // Tab Switching
+    function switchTab(tabName) {
+      state.activeTab = tabName;
+      const tabs = ['wake', 'sleep', 'nap', 'log'];
+      tabs.forEach((t) => {
+        const panel = document.getElementById('tabPanel' + t.charAt(0).toUpperCase() + t.slice(1));
+        const btn = document.getElementById('tabBtn' + t.charAt(0).toUpperCase() + t.slice(1));
+        if (panel) {
+          if (t === tabName) {
+            panel.classList.remove('hidden');
+          } else {
+            panel.classList.add('hidden');
+          }
+        }
+        if (btn) {
+          if (t === tabName) {
+            btn.className = 'tab-btn py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold transition flex items-center justify-center gap-2 bg-indigo-600 text-white shadow-md';
+          } else {
+            btn.className = 'tab-btn py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold transition flex items-center justify-center gap-2 text-slate-300 hover:text-white hover:bg-slate-800/50';
+          }
+        }
+      });
+    }
+
+    // Update Global Sliders & Age Config
+    function updateConfig() {
+      const latSlider = document.getElementById('latencySlider');
+      const cycSlider = document.getElementById('cycleLengthSlider');
+      const ageSelect = document.getElementById('ageGroupSelect');
+
+      if (latSlider) state.latencyMinutes = parseInt(latSlider.value, 10);
+      if (cycSlider) state.cycleMinutes = parseInt(cycSlider.value, 10);
+      if (ageSelect) state.ageGroup = ageSelect.value;
+
+      const latLabel = document.getElementById('latencyValueLabel');
+      const cycLabel = document.getElementById('cycleLengthLabel');
+      const summaryNote = document.getElementById('bedtimeSummaryNote');
+      const badge = document.getElementById('ageRecommendationBadge');
+
+      if (latLabel) latLabel.textContent = `${state.latencyMinutes} دقيقة`;
+      if (cycLabel) cycLabel.textContent = `${state.cycleMinutes} دقيقة`;
+      if (summaryNote) summaryNote.textContent = `يُضاف تلقائياً ${state.latencyMinutes} دقيقة للاستغراق في النوم`;
+      if (badge && ageRecommendations[state.ageGroup]) {
+        badge.textContent = ageRecommendations[state.ageGroup].label;
+      }
+
+      calculateWakeTimes();
+      calculateBedTimes();
+      updateLiveClock();
+      if (!state.napRunning) {
+        resetNapTimer();
+      }
+    }
+
+    // Set "Sleep Now"
+    function setSleepNow() {
+      const now = new Date();
+      let h24 = now.getHours();
+      let m = Math.round(now.getMinutes() / 5) * 5;
+      if (m === 60) {
+        m = 0;
+        h24 = (h24 + 1) % 24;
+      }
+      const period = h24 >= 12 ? 'PM' : 'AM';
+      let h12 = h24 % 12;
+      if (h12 === 0) h12 = 12;
+
+      document.getElementById('bedHourSelect').value = String(h12);
+      document.getElementById('bedMinuteSelect').value = String(m);
+      document.getElementById('bedPeriodSelect').value = period;
+
+      calculateWakeTimes();
+      showToast('تم ضبط وقت النوم على الوقت الحالي');
+    }
+
+    // Quick Wake Preset
+    function setQuickWake(h, m, period) {
+      document.getElementById('wakeHourSelect').value = String(h);
+      document.getElementById('wakeMinuteSelect').value = String(m);
+      document.getElementById('wakePeriodSelect').value = period;
+      calculateBedTimes();
+      showToast('تم تحديث موعد الاستيقاظ المطلوب');
+    }
+
+    // Calculate Wake-up Times (from Bedtime)
+    function calculateWakeTimes() {
+      const h = document.getElementById('bedHourSelect').value;
+      const m = document.getElementById('bedMinuteSelect').value;
+      const p = document.getElementById('bedPeriodSelect').value;
+
+      const bedMins = toMinutesFrom12h(h, m, p);
+      constbedFormatted = formatMinutesToArabic12h(bedMins).formattedAr;
+      const fallAsleepMins = bedMins + state.latencyMinutes;
+      const rec = ageRecommendations[state.ageGroup] || ageRecommendations.adult;
+
+      const cyclesOrder = [6, 5, 4, 3, 2, 1];
+      const container = document.getElementById('wakeResultsContainer');
+      if (!container) return;
+
+      container.innerHTML = cyclesOrder.map((cycles) => {
+        const sleepDuration = cycles * state.cycleMinutes;
+        const wakeMins = fallAsleepMins + sleepDuration;
+        const t = formatMinutesToArabic12h(wakeMins);
+        const isOptimal = cycles >= rec.minCycles && cycles <= rec.maxCycles;
+        const isGood = cycles === 4;
+
+        let badgeClass = 'bg-slate-800 text-slate-300 border-slate-700';
+        let cardBorder = 'border-slate-800 hover:border-slate-600 bg-slate-900/60';
+        let statusText = 'تعويض سريع';
+
+        if (isOptimal) {
+          badgeClass = 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40';
+          cardBorder = 'border-indigo-500/60 bg-indigo-950/40 hover:bg-indigo-900/40 glow-indigo';
+          statusText = 'مثالي وموصى به';
+        } else if (isGood) {
+          badgeClass = 'bg-amber-500/20 text-amber-300 border-amber-500/40';
+          cardBorder = 'border-slate-700/80 bg-slate-900/75 hover:border-indigo-400/50';
+          statusText = 'كافٍ ومقبول';
+        }
+
+        const durText = formatDurationArabic(sleepDuration);
+
+        return `
+          <button type="button" onclick="saveSleepPlan('موعد استيقاظ', '${constbedFormatted}', '${t.formattedAr}', ${cycles}, '${durText}')"
+            class="text-right p-4 rounded-2xl border transition flex flex-col justify-between gap-3 cursor-pointer ${cardBorder}">
+            <div class="flex items-center justify-between w-full">
+              <span class="text-xs font-bold px-2.5 py-0.5 rounded-full border ${badgeClass}">${statusText}</span>
+              <span class="text-xs font-semibold text-slate-400">${cycles} ${cycles <= 2 ? 'دورة' : 'دورات'}</span>
+            </div>
+            <div class="flex items-baseline justify-between w-full my-1">
+              <div class="font-mono text-2xl sm:text-3xl font-extrabold text-white tracking-tight" dir="ltr">
+                ${t.timeOnly} <span class="text-base font-sans font-bold text-indigo-300">${t.periodAr}</span>
+              </div>
+              <span class="text-xs text-slate-300 font-semibold">${durText} نوم صافي</span>
+            </div>
+            <div class="flex items-center justify-between text-[11px] text-slate-400 pt-2 border-t border-slate-800/80 w-full">
+              <span>اضغط لحفظ الموعد في سجلك</span>
+              <span class="text-indigo-300 font-bold">+ حفظ</span>
+            </div>
+          </button>
+        `;
+      }).join('');
+    }
+
+    // Calculate Bedtimes (from Target Wake Time)
+    function calculateBedTimes() {
+      const h = document.getElementById('wakeHourSelect').value;
+      const m = document.getElementById('wakeMinuteSelect').value;
+      const p = document.getElementById('wakePeriodSelect').value;
+
+      const wakeMins = toMinutesFrom12h(h, m, p);
+      const wakeFormatted = formatMinutesToArabic12h(wakeMins).formattedAr;
+      const rec = ageRecommendations[state.ageGroup] || ageRecommendations.adult;
+
+      const cyclesOrder = [6, 5, 4, 3, 2, 1];
+      const container = document.getElementById('bedResultsContainer');
+      if (!container) return;
+
+      container.innerHTML = cyclesOrder.map((cycles) => {
+        const sleepDuration = cycles * state.cycleMinutes;
+        const bedMins = wakeMins - sleepDuration - state.latencyMinutes;
+        const t = formatMinutesToArabic12h(bedMins);
+        const isOptimal = cycles >= rec.minCycles && cycles <= rec.maxCycles;
+        const isGood = cycles === 4;
+
+        let badgeClass = 'bg-slate-800 text-slate-300 border-slate-700';
+        let cardBorder = 'border-slate-800 hover:border-slate-600 bg-slate-900/60';
+        let statusText = 'نوم قصير';
+
+        if (isOptimal) {
+          badgeClass = 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40';
+          cardBorder = 'border-indigo-500/60 bg-indigo-950/40 hover:bg-indigo-900/40 glow-indigo';
+          statusText = 'مثالي وموصى به';
+        } else if (isGood) {
+          badgeClass = 'bg-amber-500/20 text-amber-300 border-amber-500/40';
+          cardBorder = 'border-slate-700/80 bg-slate-900/75 hover:border-indigo-400/50';
+          statusText = 'كافٍ ومقبول';
+        }
+
+        const durText = formatDurationArabic(sleepDuration);
+
+        return `
+          <button type="button" onclick="saveSleepPlan('موعد نوم', '${t.formattedAr}', '${wakeFormatted}', ${cycles}, '${durText}')"
+            class="text-right p-4 rounded-2xl border transition flex flex-col justify-between gap-3 cursor-pointer ${cardBorder}">
+            <div class="flex items-center justify-between w-full">
+              <span class="text-xs font-bold px-2.5 py-0.5 rounded-full border ${badgeClass}">${statusText}</span>
+              <span class="text-xs font-semibold text-slate-400">${cycles} ${cycles <= 2 ? 'دورة' : 'دورات'}</span>
+            </div>
+            <div class="flex items-baseline justify-between w-full my-1">
+              <div class="font-mono text-2xl sm:text-3xl font-extrabold text-white tracking-tight" dir="ltr">
+                ${t.timeOnly} <span class="text-base font-sans font-bold text-amber-300">${t.periodAr}</span>
+              </div>
+              <span class="text-xs text-slate-300 font-semibold">${durText} نوم صافي</span>
+            </div>
+            <div class="flex items-center justify-between text-[11px] text-slate-400 pt-2 border-t border-slate-800/80 w-full">
+              <span>اذهب للفراش في هذا الوقت</span>
+              <span class="text-indigo-300 font-bold">+ حفظ</span>
+            </div>
+          </button>
+        `;
+      }).join('');
+    }
+
+    // Smart Nap Preview & Timer
+    function updateNapPreviewTimes(nowMins) {
+      const base = nowMins + state.latencyMinutes;
+      const w20 = document.getElementById('napWake20');
+      const w26 = document.getElementById('napWake26');
+      const w90 = document.getElementById('napWake90');
+      if (w20) w20.textContent = formatMinutesToArabic12h(base + 20).formattedAr;
+      if (w26) w26.textContent = formatMinutesToArabic12h(base + 26).formattedAr;
+      if (w90) w90.textContent = formatMinutesToArabic12h(base + 90).formattedAr;
+    }
+
+    function selectNapPreset(minutes, title) {
+      state.napMinutes = minutes;
+      state.napTitle = title;
+      if (state.napTimerId) {
+        clearInterval(state.napTimerId);
+        state.napTimerId = null;
+      }
+      state.napRunning = false;
+
+      [20, 26, 90].forEach((m) => {
+        const card = document.getElementById('napCard' + m);
+        if (!card) return;
+        if (m === minutes) {
+          card.className = 'cursor-pointer p-4 rounded-2xl border border-indigo-500/60 bg-indigo-950/45 transition flex items-center justify-between gap-4 glow-indigo';
+        } else {
+          card.className = 'cursor-pointer p-4 rounded-2xl border border-slate-700/70 bg-slate-900/50 hover:bg-slate-800/60 transition flex items-center justify-between gap-4';
+        }
+      });
+
+      resetNapTimer();
+      showToast(`تم اختيار: ${title} (${minutes} دقيقة)`);
+    }
+
+    function renderNapTimerDisplay() {
+      const totalSecs = Math.max(0, state.napRemainingSeconds);
+      const mins = Math.floor(totalSecs / 60);
+      const secs = totalSecs % 60;
+      const display = document.getElementById('napTimerDisplay');
+      const titleEl = document.getElementById('activeNapTitle');
+      const subEl = document.getElementById('napTimerSubtext');
+      const btnEl = document.getElementById('napStartPauseBtn');
+
+      if (display) {
+        display.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+      }
+      if (titleEl) {
+        titleEl.textContent = state.napTitle;
+      }
+      if (subEl) {
+        subEl.textContent = `شاملاً ${state.latencyMinutes} د للغفو + ${state.napMinutes} د قيلولة`;
+      }
+      if (btnEl) {
+        btnEl.textContent = state.napRunning ? 'إيقاف مؤقت' : 'بدء المؤقت';
+      }
+    }
+
+    function toggleNapTimer() {
+      if (state.napRunning) {
+        clearInterval(state.napTimerId);
+        state.napTimerId = null;
+        state.napRunning = false;
+        renderNapTimerDisplay();
+        return;
+      }
+      state.napRunning = true;
+      renderNapTimerDisplay();
+      state.napTimerId = setInterval(() => {
+        if (state.napRemainingSeconds > 0) {
+          state.napRemainingSeconds -= 1;
+          renderNapTimerDisplay();
+        } else {
+          clearInterval(state.napTimerId);
+          state.napTimerId = null;
+          state.napRunning = false;
+          renderNapTimerDisplay();
+          playGentleChime();
+          showToast('انتهت القيلولة! وقت الاستيقاظ بنشاط');
+        }
+      }, 1000);
+    }
+
+    function resetNapTimer() {
+      if (state.napTimerId) {
+        clearInterval(state.napTimerId);
+        state.napTimerId = null;
+      }
+      state.napRunning = false;
+      state.napRemainingSeconds = (state.napMinutes + state.latencyMinutes) * 60;
+      renderNapTimerDisplay();
+    }
+
+    // Gentle Web Audio API Chime
+    function playGentleChime() {
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+        const notes = [523.25, 659.25, 783.99, 1046.5];
+        notes.forEach((freq, idx) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.22);
+          gain.gain.setValueAtTime(0.001, ctx.currentTime + idx * 0.22);
+          gain.gain.exponentialRampToValueAtTime(0.18, ctx.currentTime + idx * 0.22 + 0.05);
+          gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + idx * 0.22 + 0.65);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(ctx.currentTime + idx * 0.22);
+          osc.stop(ctx.currentTime + idx * 0.22 + 0.7);
+        });
+        showToast('تعمل نغمة التنبيه الهادئة');
+      } catch (e) {
+        showToast('الصوت غير مدعوم في هذا المتصفح');
+      }
+    }
+
+    // Saved Plans Management
+    function saveSleepPlan(mode, bedtime, waketime, cycles, hoursText) {
+      const newPlan = {
+        id: 'plan-' + Date.now(),
+        mode: mode,
+        bedtime: bedtime,
+        waketime: waketime,
+        cycles: cycles,
+        hoursText: hoursText
+      };
+      state.savedPlans.unshift(newPlan);
+      if (state.savedPlans.length > 12) {
+        state.savedPlans = state.savedPlans.slice(0, 12);
+      }
+      persistSavedPlans();
+      renderSavedPlans();
+      showToast(`تم حفظ الخطة: النوم ${bedtime} والاستيقاظ ${waketime}`);
+    }
+
+    function removeSavedPlan(planId) {
+      state.savedPlans = state.savedPlans.filter((item) => item.id !== planId);
+      persistSavedPlans();
+      renderSavedPlans();
+      showToast('تم حذف الموعد من السجل');
+    }
+
+    function clearSavedPlans() {
+      state.savedPlans = [];
+      persistSavedPlans();
+      renderSavedPlans();
+      showToast('تم مسح سجل المواعيد بالكامل');
+    }
+
+    function renderSavedPlans() {
+      const listEl = document.getElementById('savedPlansList');
+      if (!listEl) return;
+      if (state.savedPlans.length === 0) {
+        listEl.innerHTML = `
+          <div class="text-center py-8 px-4 rounded-2xl bg-slate-900/50 border border-slate-800 text-slate-400 text-sm">
+            لا توجد مواعيد محفوظة حالياً. اضغط على أي بطاقة وقت في حاسبة الاستيقاظ أو النوم لإضافتها هنا.
+          </div>
+        `;
+        return;
+      }
+
+      listEl.innerHTML = state.savedPlans.map((item) => `
+        <div class="p-3.5 rounded-2xl bg-slate-900/75 border border-slate-800 flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <span class="text-xs font-bold px-2.5 py-1 rounded-xl bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">${item.cycles} دورات</span>
+            <div>
+              <div class="text-sm font-bold text-white">
+                النوم: <span class="text-amber-300 font-mono" dir="ltr">${item.bedtime}</span>
+                <span class="mx-1.5 text-slate-500">←</span>
+                الاستيقاظ: <span class="text-emerald-300 font-mono" dir="ltr">${item.waketime}</span>
+              </div>
+              <div class="text-xs text-slate-400">${item.mode} • صافي النوم: ${item.hoursText}</div>
+            </div>
+          </div>
+          <button type="button" onclick="removeSavedPlan('${item.id}')" class="text-xs text-slate-400 hover:text-rose-400 px-2.5 py-1.5 rounded-lg hover:bg-slate-800 transition">
+            حذف
+          </button>
+        </div>
+      `).join('');
+    }
+
+    // Initialize on load
+    window.addEventListener('DOMContentLoaded', () => {
+      loadSavedPlans();
+      updateLiveClock();
+      setInterval(updateLiveClock, 15000);
+      calculateWakeTimes();
+      calculateBedTimes();
+      resetNapTimer();
+      renderSavedPlans();
+    });
+  </script>
+</body>
+</html>
